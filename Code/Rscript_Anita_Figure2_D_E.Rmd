@@ -1,0 +1,166 @@
+---
+title: "Figure_2_D_E"
+author: "Anita Corredor"
+date: "12/8/2017"
+output: html_document
+---
+Loading Packages:
+```{r }
+library(readxl)
+library(ggplot2)
+library(reshape)
+library(reshape2)
+library(plyr)
+library(scales)
+```
+
+#Figure 2 D
+Data is located in test5.xlsx which is modified from supp_gr.166397.113_Supp_Table3.xlsx
+
+##prepare the data for heatmap
+```{r}
+test5 <- data.frame(test5)
+test5.m<- melt(test5)
+test5.m$gen2<-factor(test5.m$gen, levels=rev(levels(factor(test5.m$gen))))
+```
+
+##generating the plot with ggplot2 package
+```{r}
+(s <- ggplot(test5.m, aes(variable, gen2)) + geom_tile(aes(fill = value), 
+              colour = "white") + 
+    scale_fill_gradient2(low = "red", mid = "white", high = "blue")   )
+s+labs(x="",y="") 
+```
+
+
+
+#Figures 2 E-1
+We create a Data set with the names of the families that are going to be used on the figures TCP.xlsx and MADS.xlsx which are extracted from Supp_Table3.xlsx
+
+##prepare the data for heatmap
+```{r}
+toupper(TCP$id) 
+TCP$id <- toupper(TCP$id)
+```
+
+##subsetting the data 
+We used the information of the values of ln fold change from Supplemental_Table_2
+```{r}
+Supp_Table2_TCP <- subset(Supplemental_Table_2, Supplemental_Table_2$gene_id %in% TCP$id)
+Supp_Table2_TCP <- Supp_Table2_TCP[,-c(2,4,6,8,10:15)]
+remove <- NA
+Supp_Table2_TCP <- Supp_Table2_TCP[!Supp_Table2_TCP$size %in% remove,]
+remove<-"tas"
+Supp_Table2_TCP <- Supp_Table2_TCP[!Supp_Table2_TCP$q2 %in% remove,]
+```
+
+##arranging the levels in the same order as on the original figure
+```{r}
+Supp_Table2_TCP$gene_id<-factor(Supp_Table2_TCP$gene_id,levels=c("GRMZM2G178603",
+                                                                 "GRMZM2G465091",
+                                                                 "GRMZM2G078077",
+                                                                 "GRMZM2G089361",
+                                                                 "AC205574.3_FGT006",
+                                                                 "AC199782.5_FGT003",
+                                                                 "GRMZM2G092214",
+                                                                 "GRMZM2G089638",
+                                                                 "GRMZM2G093895",
+                                                                 "GRMZM2G015037",
+                                                                 "GRMZM2G096610",
+                                                                 "GRMZM2G064628",
+                                                                 "GRMZM2G330719"
+                                                                 ))
+```
+
+
+##arranging the siginificance sign on the Subset Data 
+```{r}
+Supp_Table2_TCP$significant[Supp_Table2_TCP$significant == "no"] <- ""
+Supp_Table2_TCP$significant[Supp_Table2_TCP$significant == "yes"] <- "*"
+```
+
+##arranging the mutants ra1, ra2 and ra3 with the size expression on mm
+```{r}
+Supp_Table2_TCP$sizeq2 <- paste(Supp_Table2_TCP$q2, Supp_Table2_TCP$size)
+
+```
+
+##plotting the heat map for the TCP family of genes
+```{r}
+(t <- 
+    ggplot(Supp_Table2_TCP, aes(sizeq2, gene_id)) + 
+    geom_tile(aes(fill=ln_fc), colour = "white") + 
+    scale_fill_gradient2(low = "red", mid = "white", high = "blue") +
+    geom_text(aes(label = significant), colour = "black", fontface = "bold")
+)
+```
+
+##modifing the labels for final presentation
+```{r}
+
+t+labs(x="* DE p < 0.05;FDR 10%",y="DE TCP TFs")
+```
+
+
+#Figures 2 E-2
+
+##prepare the data for heatmap                                                                 
+```{r}                                                                 
+toupper(MADS$id) 
+MADS$id <- toupper(MADS$id)
+```
+
+##subsetting the data 
+We used the information of the values of ln fold change from Supplemental_Table_2
+```{r}
+Supp_Table2_MADS <- subset(Supplemental_Table_2, Supplemental_Table_2$gene_id %in% MADS$id)
+Supp_Table2_MADS <- Supp_Table2_MADS[,-c(2,4,6,8,10:15)]
+remove <- NA
+Supp_Table2_MADS <- Supp_Table2_MADS[!Supp_Table2_MADS$size %in% remove,]
+remove<-"2mm"
+Supp_Table2_MADS<-Supp_Table2_MADS[!Supp_Table2_MADS$size %in% remove,]
+```
+
+##arranging the levels in the same order as on the original figure
+```{r}
+Supp_Table2_MADS$gene_id<-factor(Supp_Table2_MADS$gene_id, levels=c("GRMZM2G117961",
+                                                                    "GRMZM2G370777",
+                                                                    "GRMZM2G071620",
+                                                                    "GRMZM2G059102",
+                                                                    "GRMZM2G046885",
+                                                                    "GRMZM2G033093",
+                                                                    "GRMZM5G805387",
+                                                                    "GRMZM2G026223",
+                                                                    "AC234185.1_FGT006",
+                                                                    "GRMZM2G105387",
+                                                                    "GRMZM5G891280",
+                                                                    "GRMZM2G005155"
+                                                                    ))
+```
+
+##arranging the siginificance sign on the Subset Data 
+```{r}
+Supp_Table2_MADS$significant[Supp_Table2_MADS$significant == "no"] <- ""
+Supp_Table2_MADS$significant[Supp_Table2_MADS$significant == "yes"] <- "*"
+```
+
+##plotting the heat map for the MADS family of genes
+```{r}
+(u <- 
+    ggplot(Supp_Table2_MADS, aes(q2, gene_id)) + 
+    geom_tile(aes(fill=ln_fc), colour = "white") + 
+    scale_fill_gradient2(low = "red", mid = "white", high = "blue") +
+    geom_text(aes(label = significant), colour = "black", fontface = "bold")
+)
+```
+
+##modifing the labels for final presentation
+```{r}
+u+labs(x="",y="DE MADS-box TFs")
+```
+
+
+
+
+
+

@@ -1,0 +1,285 @@
+---
+title: "Figure3_A to C&G"
+author: "Yan Zhou"
+date: "12/7/2017"
+output: html_document
+---
+Loading Packages:
+```{r }
+library(reshape2)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(cowplot)
+library(Rmisc)
+```
+
+## Figure 3 A
+
+Data is located in expression_table_s6.csv which is modified from S_table6.xlx
+
+```{r}
+kc<-read.csv("expression_table_s6.csv",header = T)
+p<-kc$clustera
+p<-as.data.frame(p)
+names(p)<-"cluster"
+
+```
+#generating the FPKM matrix by removing the cluster column 
+#to calculate the cluster, it is first make the z score of each gene' relatively expression leve in tissues.
+#so we need to cauculate the z score row by row
+#because the scale fuction can't calculate column by column, we need first tranform the the data frame 
+#then transform the data back to original order
+```{r}
+kk<-kc[,-1]
+
+kw<-NULL
+
+kk1<-t(kk)
+kw<-NULL
+for (i in 1:ncol(kk1)) {
+  km<-NULL
+  kn<-kk1[,i]
+  k<-scale(kn)
+  #get the z score
+  km<- (k-mean(k))/sd(k)
+  kw<-cbind(kw,km)
+}
+#transform the data back to original order
+kw2<-t(kw)
+kw2<-as.data.frame(kw2)
+#adding the cluster information back
+kw2$clustera<-p$cluster
+m<-table(kw2$clustera)
+m<-as.data.frame(m)
+kw2$clustera<-as.character(kw2$clustera)
+#calculating the mean z score of each element
+w<-aggregate(kw2,by=list(kw2$clustera), FUN=mean)
+```
+
+#prepare the data for heatmap
+```{r}
+names(w)<-names(kc)
+w<-w[,c(1:9)]
+#give the names of each clumn
+names(w)<-c("clustera","1mm","2mm","IM/SPM","SM","FM","stg1","stg2","stg3")
+df.melted <- melt(w, id.vars=c("clustera"))
+names(df.melted)<-c("cls","ti","value")
+df.melted$value=df.melted$value
+```
+
+#generating the heatmap of relative experession level of each cluster
+```{r}
+hm<-ggplot(data = df.melted, aes(x = factor(ti), y =factor(cls,levels=c("3", 
+                                                                        "4", 
+                                                                        "1",
+                                                                        "17",
+                                                                        "13",
+                                                                        "7",
+                                                                        "8",
+                                                                        "15",
+                                                                        "6",
+                                                                        "9",
+                                                                        "19",
+                                                                        "12",
+                                                                        "11",
+                                                                        "16",
+                                                                        "10",
+                                                                        "5",
+                                                                        "14",
+                                                                        "18",
+                                                                        "2",
+                                                                        "20")), fill = value))+
+  geom_tile()+
+  scale_fill_distiller(name = "Legend title", palette = "Blues", direction = 1, na.value = "transparent") +
+  scale_x_discrete(breaks = unique(df.melted$ti), labels = unique(df.melted$ti)) + theme_bw() +
+  scale_x_discrete(position = "top")+
+  xlab("")+
+  ylab("")+
+  theme(legend.position = "bottom", legend.direction = "horizontal",
+        legend.title = element_text(size = 15), legend.key.size = unit(1,"cm"),
+        legend.text = element_text(size = 7)) +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5))
+
+#modify the theme and axis
+hm1<-hm+theme_minimal()+  
+  theme(axis.text.x = element_text(angle = 60,hjust=0,face = "bold", size = 12))+
+  theme(axis.text.y = element_text(face = "bold", size = 12))+
+  theme(legend.position = "bottom", legend.direction = "horizontal",
+        legend.title = element_text(size = 15), legend.key.size = unit(0.5,"cm"),
+        legend.text = element_text(size = 7))+
+        theme(legend.title=element_blank())
+        guides(fill = guide_legend(title=""))
+```
+
+#addling a plot shows number of each cluster
+
+```{r}
+
+lab<-ggplot(data = m, aes(x = factor(k), y =factor(Var1,levels=c("3", 
+                                                                 "4", 
+                                                                 "1",
+                                                                 "17",
+                                                                 "13",
+                                                                 "7",
+                                                                 "8",
+                                                                 "15",
+                                                                 "6",
+                                                                 "9",
+                                                                 "19",
+                                                                 "12",
+                                                                 "11",
+                                                                 "16",
+                                                                 "10",
+                                                                 "5",
+                                                                 "14",
+                                                                 "18",
+                                                                 "2",
+                                                                 "20"))))+
+  geom_tile(fill="white") + 
+  geom_text(aes(label = round(Freq, 1)))+
+  xlab("")+
+  ylab("")+theme_minimal()+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  theme(legend.position = "none")
+```
+
+# arrange the layout of combining plot to adjust the two figuress
+```{r}
+lay <- rbind(c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,2),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA),
+             c(1,1,1,1,NA))
+
+#combine the plot together
+
+grid.arrange(hm1,lab, layout_matrix = lay)
+```
+
+## Firgure3 B&C
+
+#generateing two plots of cluster 11 and 8
+```{r}
+c11<-subset(df.melted,cls=="11")
+c8<-subset(df.melted,cls=="8")
+```
+#cluster 8
+```{r}
+c8.1<-ggplot(data = c8, aes(x = factor(ti), y =factor(cls), fill = value))+
+  geom_tile(height=0.2)+
+  scale_fill_distiller(name = "Legend title", palette = "Blues", direction = 1, na.value = "transparent") +
+  scale_x_discrete(breaks = unique(df.melted$ti), labels = unique(df.melted$ti)) + theme_bw() +
+  scale_x_discrete(position = "top")+
+  xlab("")+
+  ylab("")+
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5))+theme_minimal()+  
+  theme(axis.text.x = element_text(angle = 60,hjust=0,face = "bold", size = 12))+
+  theme(axis.text.y = element_blank())+
+  theme(line = element_blank())+
+  theme(legend.position = "none")
+c8.2<-ggplot(data=c8,aes(x=factor(ti),y=value,group=1))+
+  geom_point(colour="blue",size=2)+
+  geom_line()+
+  theme(axis.text.x = element_blank())+
+  ylab("relative expression")+
+  xlab("")
+
+grid.arrange(c8.1, c8.2, nrow = 2)
+```
+
+#cluster 11
+```{r}
+c11.1<-ggplot(data = c11, aes(x = factor(ti), y =factor(cls), fill = value))+
+  geom_tile(height=0.2)+
+  scale_fill_distiller(name = "Legend title", palette = "Blues", direction = 1, na.value = "transparent") +
+  scale_x_discrete(breaks = unique(df.melted$ti), labels = unique(df.melted$ti)) + theme_bw() +
+  scale_x_discrete(position = "top")+
+  xlab("")+
+  ylab("")+
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5))+theme_minimal()+  
+  theme(axis.text.x = element_text(angle = 60,hjust=0,face = "bold", size = 12))+
+  theme(axis.text.y = element_blank())+
+  theme(line = element_blank())+
+  theme(legend.position = "none")
+c11.2<-ggplot(data=c11,aes(x=factor(ti),y=value,group=1))+
+  geom_point(colour="blue",size=2)+
+  geom_line()+
+  ylim(-1,3)+
+  theme(axis.text.x = element_blank())+
+  ylab("relative expression")+
+  xlab("")
+grid.arrange(c11.1, c11.2, nrow = 2)
+```
+##Figure3 G
+
+#Following are plot for generating the experssion levele of different genes in cluster8. The fpkm value is a combination of sup tableS6 for tissue expression and S2 for mutants expression
+```{r}
+id<-read.csv("cluster8.csv",header = T)
+#rename the cluster file
+names(id)<-c("id","IM/SPM","SM","FM","stg1","stg2","stg3","wt_1mm", "ra1_1mm","ra2_1mm","ra3_1mm","wt_2mm","ra1_2mm","ra2_2mm","ra3_2mm")
+#divide into 3 subgroups
+id1<-subset(id,id=="rs2"|id=="CUC-like"|id=="TCP TF")
+id2<-subset(id,id=="unknown grass-specific"|id=="ROXY")
+id3<-subset(id,id=="wox9C"|id=="LOB TF")
+#Assgin the subgroup ids so we can later use facet fuction of ggplot to generate 3 plots
+m1<-melt(id1, id.vars=c("id"))
+names(m1)<-c("id","ti","value")
+m1$cluster=1
+m2<-melt(id2, id.vars=c("id"))
+names(m2)<-c("id","ti","value")
+m2$cluster=2
+m3<-melt(id3, id.vars=c("id"))
+names(m3)<-c("id","ti","value")
+m3$cluster=3
+m4<-rbind(m1,m2,m3)
+#Plotting
+ggplot(data=m4,aes(x=factor(ti),y=value,color=id,group=id))+
+  geom_point(size=2,aes(fill=id))+
+  geom_line()+
+  theme(axis.text.x = element_blank())+
+  xlab("")+
+  ylab("FPKM")+
+  theme_bw()+  
+  theme(axis.text.x = element_text(angle = 60,hjust=0,face = "bold", size = 12))+
+  theme(axis.text.y = element_text(face = "bold", size = 12))+scale_x_discrete(position = "top")+
+  theme(line = element_blank())+
+  #using facet function to divid the plot into 3 subgroup
+  facet_wrap(~cluster,nrow = 3)+
+  #modify the figures' space
+  theme(strip.text.x = element_blank())+theme(panel.spacing.y = unit(0,"lines"))+
+  theme(legend.title=element_blank())
+
+```

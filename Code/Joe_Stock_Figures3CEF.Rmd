@@ -1,0 +1,217 @@
+---
+title: "Figures3CEF"
+author: "Joe Stock"
+date: "December 8, 2017"
+output: html_document
+---
+
+# Set the working directory for the files we'll be working with.
+
+```{r}
+setwd("C:/Users/Stock/Desktop/BCB-546X/BCB546X-Fall2017/Final_Group_Project/")
+```
+
+# Differentially expressed genes in cluster 11 expressed in all mutants
+# Read in the supplementary files for the first graph.
+
+# Load libraries
+
+```{r}
+library(readxl)
+library(readr)
+library(gtools)
+library(reshape2)
+library(scales)
+library(plyr)
+library(ggplot2)
+```
+
+
+# Load the necessary files
+
+```{r}
+Supp_Table5 <- read_delim("Supp_Table5.txt", 
+                          "\t", escape_double = FALSE, trim_ws = TRUE)
+                          
+Supp_Table7 <- read_excel("Supp_Table7.xlsx")
+Supp_Table3 <- read_excel("Supp_Table3.xlsx")
+Supp_Table6 <- read_excel("Supp_Table6.xlsx")
+```
+
+# Because we are only interested in the genes that are signifcantly differentially expressed in each mutant,
+# we can remove any from Table 7 that do not have fold changes values for each mutant.
+
+```{r}
+Supp_Table7 <- Supp_Table7[complete.cases(Supp_Table7[ , 4:7]),]
+```
+
+# Remove the first duplicated row of the data frame
+
+```{r}
+Supp_Table5 <- Supp_Table5[-1,]
+```
+
+# Now we can pull the values from Supplementary Table 5 to calculate the fold change differences and their
+# log scores to develop the heat map.
+# What we are trying to accomplish with this is reducing whole Table 5 data frame down, to only genes 
+# that are differentially expressed in group 11 for each mutant.
+
+```{r}
+Supp_Table <- subset(Supp_Table5, Supp_Table5$gene.id %in% Supp_Table7$maize.gene.id)
+head(Supp_Table)
+```
+
+# Dim() will define whether we have achieved our goal.
+
+```{r}
+dim(Supp_Table)
+dim(Supp_Table7)
+```
+
+# As we can see each data frame is now 28 obs long, which coincides with the same genes in each
+
+# I do not need all of the variables to calculate fold changes for the mutants vs wild type, so 
+# I will remove those that I do not need. 
+
+```{r}
+Supp_Table_clean <- Supp_Table[,-c(2:7,12:15)]
+```
+
+# Now I will have to calculate the fold changes and convert to log scale. I need to install the gtools
+# package to be able to use the fold change package.
+
+```{r}
+Supp_Table_clean$ra1_fc <- foldchange(as.numeric(Supp_Table_clean$ear.ra1.1mm),as.numeric(Supp_Table_clean$ear.wt.1mm))
+Supp_Table_clean$ra1_lnfc <- log(abs(Supp_Table_clean$ra1_fc))
+Supp_Table_clean$ra1_lnfc <- ifelse(Supp_Table_clean$ra1_fc < 0, -1 * Supp_Table_clean$ra1_lnfc, Supp_Table_clean$ra1_lnfc) 
+
+Supp_Table_clean$ra2_fc <- foldchange(as.numeric(Supp_Table_clean$ear.ra2.1mm),as.numeric(Supp_Table_clean$ear.wt.1mm))
+Supp_Table_clean$ra2_lnfc <- log(abs(Supp_Table_clean$ra2_fc))
+Supp_Table_clean$ra2_lnfc <- ifelse(Supp_Table_clean$ra2_fc < 0, -1 * Supp_Table_clean$ra2_lnfc, Supp_Table_clean$ra2_lnfc)
+
+Supp_Table_clean$ra3_fc <- foldchange(as.numeric(Supp_Table_clean$ear.ra3.1mm),as.numeric(Supp_Table_clean$ear.wt.1mm))
+Supp_Table_clean$ra3_lnfc <- log(abs(Supp_Table_clean$ra3_fc))
+Supp_Table_clean$ra3_lnfc <- ifelse(Supp_Table_clean$ra3_fc < 0, -1 * Supp_Table_clean$ra3_lnfc, Supp_Table_clean$ra3_lnfc)
+
+Supp_Table_Final <- Supp_Table_clean[,-c(2:6,8,10)]
+
+Supp_Table_Final <- Supp_Table_Final[order(-Supp_Table_Final$ra3_lnfc),]
+```
+
+# Because I am getting return errors for the value of -Inf in my melt file, it messes up the 
+# transformation later, therefore I manually deleted the measure
+
+```{r}
+Supp_Table_Final <- Supp_Table_Final[-28,]
+
+
+Supp_Table_Final.m <- melt(Supp_Table_Final)
+
+
+Supp_Table_Final.m <- ddply(Supp_Table_Final.m, .(variable), transform, rescale = rescale(value))
+
+dat.temp <- Supp_Table_Final.m %>%
+  filter(variable %in% c("ra3_lnfc")) %>%
+  arrange(rescale)
+
+Supp_Table_Final.m$gene.id <- factor(Supp_Table_Final.m$gene.id, levels=as.character(dat.temp$gene.id))
+
+
+(p <- 
+    ggplot(Supp_Table_Final.m, aes(variable, gene.id)) + 
+    geom_tile(aes(fill=value), colour = "black") + 
+    scale_fill_gradient2(low = "red", mid = "black", high = "green")
+  )
+```
+
+# Figure 3E - Differentially expressed genes in cluster 8 expressed in all mutants
+
+```{r}
+Supp_Table3 <- Supp_Table3[complete.cases(Supp_Table3[ , 6:8]),]  
+```
+
+# Pull cluster 8 observations from table 6 and identify complete cases across all mutants
+
+```{r}
+Clust8 <- Supp_Table6[Supp_Table6$clustera == 8,]
+Clust8$DE.ra1.1mm[Clust8$DE.ra1.1mm == "no"] <- NA
+Clust8$DE.ra2.1mm[Clust8$DE.ra2.1mm == "no"] <- NA
+Clust8$DE.ra3.1mm[Clust8$DE.ra3.1mm == "no"] <- NA
+
+Clust8 <- Clust8[complete.cases(Clust8[ , 13:15]),] 
+```
+
+# Organizing and cleaning
+
+# This methods pulls DE from Table 3, however when used the values do not make sense.
+# Supp_Table3$id <- substr(Supp_Table3$id,1,13)
+# Supp_Table3$id <- toupper(Supp_Table3$id)
+# Clust8_Sub <- subset(Supp_Table3, Supp_Table3$id %in% Supp_Table6$maize.gene.id)
+# Clust8_Sub <- Clust8_Sub[,-9]
+# Clust8_Sub <- Clust8_Sub[,-c(1,2,4,5)]
+# Clust8_Sub.m <- melt(Clust8_Sub)
+# Clust8_Sub.m <- ddply(Clust8_Sub.m, .(variable), transform, rescale = rescale(value))
+
+```{r}
+Cluster8 <- subset(Supp_Table5, Supp_Table5$gene.id %in% Clust8$maize.gene.id)
+
+Cluster8$ra1_fc <- foldchange(as.numeric(Cluster8$ear.ra1.1mm),as.numeric(Cluster8$ear.wt.1mm))
+Cluster8$ra1_lnfc <- log(abs(Cluster8$ra1_fc))
+Cluster8$ra1_lnfc <- ifelse(Cluster8$ra1_fc < 0, -1 * Cluster8$ra1_lnfc, Cluster8$ra1_lnfc) 
+
+Cluster8$ra2_fc <- foldchange(as.numeric(Cluster8$ear.ra2.1mm),as.numeric(Cluster8$ear.wt.1mm))
+Cluster8$ra2_lnfc <- log(abs(Cluster8$ra2_fc))
+Cluster8$ra2_lnfc <- ifelse(Cluster8$ra2_fc < 0, -1 * Cluster8$ra2_lnfc, Cluster8$ra2_lnfc)
+
+Cluster8$ra3_fc <- foldchange(as.numeric(Cluster8$ear.ra3.1mm),as.numeric(Cluster8$ear.wt.1mm))
+Cluster8$ra3_lnfc <- log(abs(Cluster8$ra3_fc))
+Cluster8$ra3_lnfc <- ifelse(Cluster8$ra3_fc < 0, -1 * Cluster8$ra3_lnfc, Cluster8$ra3_lnfc)
+
+Cluster8 <- Cluster8[-5,]
+Cluster8 <- Cluster8[,-c(2:16,18,20)]
+
+Cluster8.m <- melt(Cluster8)
+Cluster8.m <- ddply(Cluster8.m, .(variable), transform, rescale = rescale(value))
+
+(p <- 
+    ggplot(Cluster8.m, aes(variable, gene.id)) + 
+    geom_tile(aes(fill=value), colour = "black") + 
+    scale_fill_gradient2(low = "red", mid = "black", high = "green")
+)
+```
+
+# Genes DE in ra1 and expression vs wild type
+
+```{r}
+Clust8DEra1 <- Supp_Table6[Supp_Table6$clustera == 8,]
+Clust8DEra1$DE.ra1.1mm[Clust8DEra1$DE.ra1.1mm == "no"] <- NA
+
+Clust8DEra1 <- Clust8DEra1[complete.cases(Clust8DEra1[ , 13]),] 
+
+Cluster8DEra1 <- subset(Supp_Table5, Supp_Table5$gene.id %in% Clust8DEra1$maize.gene.id)
+
+Cluster8DEra1$ra1_fc <- foldchange(as.numeric(Cluster8DEra1$ear.ra1.1mm),as.numeric(Cluster8DEra1$ear.wt.1mm))
+Cluster8DEra1$ra1_lnfc <- log(abs(Cluster8DEra1$ra1_fc))
+Cluster8DEra1$ra1_lnfc <- ifelse(Cluster8DEra1$ra1_fc < 0, -1 * Cluster8DEra1$ra1_lnfc, Cluster8DEra1$ra1_lnfc) 
+
+Cluster8DEra1$ra2_fc <- foldchange(as.numeric(Cluster8DEra1$ear.ra2.1mm),as.numeric(Cluster8DEra1$ear.wt.1mm))
+Cluster8DEra1$ra2_lnfc <- log(abs(Cluster8DEra1$ra2_fc))
+Cluster8DEra1$ra2_lnfc <- ifelse(Cluster8DEra1$ra2_fc < 0, -1 * Cluster8DEra1$ra2_lnfc, Cluster8DEra1$ra2_lnfc)
+
+Cluster8DEra1$ra3_fc <- foldchange(as.numeric(Cluster8DEra1$ear.ra3.1mm),as.numeric(Cluster8DEra1$ear.wt.1mm))
+Cluster8DEra1$ra3_lnfc <- log(abs(Cluster8DEra1$ra3_fc))
+Cluster8DEra1$ra3_lnfc <- ifelse(Cluster8DEra1$ra3_fc < 0, -1 * Cluster8DEra1$ra3_lnfc, Cluster8DEra1$ra3_lnfc)
+
+Cluster8DEra1 <- Cluster8DEra1[,-c(2:16,18,20)]
+
+Cluster8DEra1.m <- melt(Cluster8DEra1)
+Cluster8DEra1.m <- ddply(Cluster8DEra1.m, .(variable), transform, rescale = rescale(value))
+
+(p <- 
+    ggplot(Cluster8DEra1.m, aes(variable, gene.id)) + 
+    geom_tile(aes(fill=value), colour = "black") + 
+    scale_fill_gradient2(low = "red", mid = "black", high = "green")
+)
+```
+
+
