@@ -1,4 +1,9 @@
 # -Unofficials-Group-Project
+
+# Utilized Journal Article
+Regulatory modules controlling maize inflorescence architecture
+Authors: Andrea L. Eveland, Alexander Goldshmidt, Michael Pautler, Kengo Morohashi, Christophe Liseron-Monfils, Michael W. Lewis, Sunita Kumari, Susumu Hiraga, Fang Yang, Erica Unger-Wallace, Andrew Olson, Sarah Hake, Erik Vollbrecht, Erich Grotewold, Doreen Ware, and David Jackson
+
 # Data inspection of Figure2.A, 2.B and 2.C
 To recreate Figure 2A, the supplementary table 2 was read to R, filtering out the differential expressed (DE) gene (by the column significant == "yes"). Depending on which mutant I chose ra1, ra2, or ra3 on the column q1 along with 1mm or 2mm on the column size with the “mut_series” on the column series. The gene_id were ppicked up as the character vector, which were then subjected to the package VennDiagram for plotting the Venn diagram stating the overlapping gene expression between ramosa mutants. 
 To create Figure 2B, the workflow is similar but with an extra step, selecting out the transcription factor, performed priory. To select the transcription factors, grep the rows with the tag “transcription” by using Linux command lines on supplementary table 6. The transcription factors selected from table 6 were than processed through the following work flow mentioned above on R.
