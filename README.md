@@ -4,7 +4,7 @@
 
 # Author - year file
 
-Introduces the article and explains the workflow and content of the work
+The file *ZhouLiuCorredorStock-2017.md* introduces the original paper title and authors, and explains the workflow and content of the work for this project.
 
 # Code 
 
